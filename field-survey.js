@@ -302,6 +302,96 @@ function clearPoints() {
     updatePointCount();
 }
 
+/* =========================================================
+   CREATE BOUNDARY
+   ========================================================= */
+
+function createBoundary() {
+
+    if (surveyPoints.length < 3) {
+        alert(
+            "At least 3 points are required to create a boundary."
+        );
+        return;
+    }
+
+    console.log("Creating Boundary...");
+
+    // Close the polygon by returning to P1
+    const boundaryPoints = [...surveyPoints, surveyPoints[0]];
+
+    console.log("Boundary Points:", boundaryPoints);
+
+    // Calculate approximate area
+    const area = calculatePolygonArea(boundaryPoints);
+
+    alert(
+        "Boundary Created Successfully!\n\n" +
+        "Points: " + surveyPoints.length + "\n" +
+        "Approx. Area: " + area.toFixed(2) + " m²"
+    );
+
+    console.log(
+        "Boundary Area:",
+        area.toFixed(2),
+        "m²"
+    );
+}
+
+
+/* =========================================================
+   CALCULATE POLYGON AREA
+   ========================================================= */
+
+function calculatePolygonArea(points) {
+
+    if (points.length < 3) {
+        return 0;
+    }
+
+    const earthRadius = 6378137;
+
+    const lat0 =
+        points[0].latitude *
+        Math.PI / 180;
+
+    let x = [];
+    let y = [];
+
+    points.forEach(function (point) {
+
+        const lat =
+            point.latitude *
+            Math.PI / 180;
+
+        const lon =
+            point.longitude *
+            Math.PI / 180;
+
+        x.push(
+            earthRadius *
+            lon *
+            Math.cos(lat0)
+        );
+
+        y.push(
+            earthRadius *
+            lat
+        );
+    });
+
+    let area = 0;
+
+    for (let i = 0; i < points.length - 1; i++) {
+
+        area +=
+            x[i] * y[i + 1] -
+            x[i + 1] * y[i];
+    }
+
+    return Math.abs(area) / 2;
+}
+
 
 /* =========================================================
    INITIALIZE FIELD SURVEY
@@ -323,38 +413,69 @@ function initializeFieldSurvey() {
     const clearPointsButton =
         document.getElementById("clearPointsBtn");
 
+    const createBoundaryButton =
+        document.getElementById("createBoundaryBtn");
+
+
+    /* START GPS */
 
     if (startGpsButton) {
+
         startGpsButton.addEventListener(
             "click",
             startGPS
         );
+
     }
 
 
+    /* STOP GPS */
+
     if (stopGpsButton) {
+
         stopGpsButton.addEventListener(
             "click",
             stopGPS
         );
 
         stopGpsButton.disabled = true;
+
     }
 
 
+    /* SAVE POINT */
+
     if (savePointButton) {
+
         savePointButton.addEventListener(
             "click",
             savePoint
         );
+
     }
 
 
+    /* CLEAR POINTS */
+
     if (clearPointsButton) {
+
         clearPointsButton.addEventListener(
             "click",
             clearPoints
         );
+
+    }
+
+
+    /* CREATE BOUNDARY */
+
+    if (createBoundaryButton) {
+
+        createBoundaryButton.addEventListener(
+            "click",
+            createBoundary
+        );
+
     }
 
 
