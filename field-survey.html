@@ -9,6 +9,8 @@
 
     <title>LandCraft | Field Survey</title>
 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
     <link rel="stylesheet" href="style.css">
 
 </head>
@@ -138,37 +140,27 @@
 
 
             <div class="survey-form-grid">
-
-
                 <!-- Plot ID -->
+                <div class="survey-form-group">
+                    <label for="surveyType">Survey Type</label>
 
-                <div class="form-group">
+                    <select id="surveyType">
+                        <option value="recorded">Existing Recorded Plot</option>
+                        <option value="new">New / Unrecorded Area</option>
+                    </select>
+                </div>
 
-                    <label for="surveyPlotId">
-                        Plot ID
-                    </label>
+                <div class="form-group" id="plotIdGroup">
+
+                    <label for="surveyPlotId">Plot ID</label>
 
                     <select id="surveyPlotId">
 
-                        <option value="">
-                            Select Plot
-                        </option>
-
-                        <option value="LC-001">
-                            LC-001
-                        </option>
-
-                        <option value="LC-002">
-                            LC-002
-                        </option>
-
-                        <option value="LC-003">
-                            LC-003
-                        </option>
-
-                        <option value="LC-004">
-                            LC-004
-                        </option>
+                        <option value="">Select Plot</option>
+                        <option value="LC-001">LC-001</option>
+                        <option value="LC-002">LC-002</option>
+                        <option value="LC-003">LC-003</option>
+                        <option value="LC-004">LC-004</option>
 
                     </select>
 
@@ -399,7 +391,7 @@
                     Clear Points
                 </button>
 
-                <button class="primary-btn" id="createPolygonBtn">
+                <button type="button" class="primary-btn" id="createBoundaryBtn">
                     Create Boundary
                 </button>
 
@@ -449,6 +441,25 @@
                         boundary will appear here.
                     </p>
 
+                </div>
+
+            </div>
+
+            <div class="survey-map-legend">
+
+                <div class="survey-legend-item">
+                    <span class="survey-legend-color recorded"></span>
+                    <span>Recorded Boundary</span>
+                </div>
+
+                <div class="survey-legend-item">
+                    <span class="survey-legend-color requested"></span>
+                    <span>Requested / Claimed Boundary</span>
+                </div>
+
+                <div class="survey-legend-item">
+                    <span class="survey-legend-color collected"></span>
+                    <span>Collected Boundary</span>
                 </div>
 
             </div>
@@ -546,6 +557,9 @@
     <!-- =====================================================
          JAVASCRIPT
          ===================================================== -->
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
 
     <script src="field-survey.js"></script>
 

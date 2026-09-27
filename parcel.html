@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Parcels | LandCraft</title>
+
+    <!-- Leaflet Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Parcel Page CSS -->
+    <link rel="stylesheet" href="parcel.css">
+
+</head>
+
+<body>
+
+    <!-- =====================================================
+         TOP NAVBAR
+         ===================================================== -->
+
+    <header class="topbar">
+
+        <div class="topbar-inner">
+
+            <!-- Brand -->
+
+            <a href="index.html" class="brand">
+
+                <div class="brand-icon">
+                    LC
+                </div>
+
+                <div class="brand-text">
+                    <strong>LandCraft</strong>
+                    <span>Land Verification Platform</span>
+                </div>
+
+            </a>
+
+
+            <!-- Navigation -->
+
+            <nav class="nav-links" id="navLinks">
+
+                <a href="index.html">
+                    Dashboard
+                </a>
+
+                <a href="parcel.html" class="active">
+                    Parcels
+                </a>
+
+                <a href="field-survey.html">
+                    Field Survey
+                </a>
+
+                <a href="#">
+                    Reports
+                </a>
+
+            </nav>
+
+
+            <!-- Mobile Menu -->
+
+            <button class="mobile-menu-btn" id="mobileMenuBtn" type="button">
+                ☰
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+         ===================================================== -->
+
+    <main class="parcel-page">
+
+        <!-- Page Header -->
+
+        <section class="parcel-page-header">
+
+            <div>
+
+                <span class="section-label">
+                    RECORDED DATA
+                </span>
+
+                <h1>
+                    Recorded Parcels
+                </h1>
+
+                <p>
+                    View and manage recorded land parcel information
+                    available in the LandCraft reference data.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             PARCEL SUMMARY
+             ================================================= -->
+
+        <section class="parcel-summary">
+
+            <div class="summary-card">
+
+                <span class="summary-label">
+                    Total Parcels
+                </span>
+
+                <strong id="totalParcelCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <span class="summary-label">
+                    Verified
+                </span>
+
+                <strong id="verifiedParcelCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <span class="summary-label">
+                    Pending
+                </span>
+
+                <strong id="pendingParcelCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <span class="summary-label">
+                    Discrepancy
+                </span>
+
+                <strong id="discrepancyParcelCount">
+                    0
+                </strong>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             PARCEL LIST
+             ================================================= -->
+
+        <section class="parcel-section">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <span class="section-label">
+                        PARCEL REGISTRY
+                    </span>
+
+                    <h2>
+                        Recorded Parcels
+                    </h2>
+
+                </div>
+
+            </div>
+
+
+            <!-- Parcel cards will be inserted here -->
+
+            <div class="parcel-list" id="parcelList">
+
+                <div class="parcel-empty">
+
+                    Loading recorded parcels...
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- =================================================
+     PARCEL MAP MODAL
+     ================================================= -->
+
+        <div id="parcelMapModal" class="parcel-map-modal">
+
+            <div class="parcel-map-modal-content">
+
+                <div class="parcel-map-modal-header">
+
+                    <div>
+
+                        <span class="section-label">
+                            MAP VIEW
+                        </span>
+
+                        <h2 id="mapParcelTitle">
+                            Parcel Location
+                        </h2>
+
+                    </div>
+
+                    <button type="button" id="closeParcelMap" class="close-map-btn">
+                        ×
+                    </button>
+
+                </div>
+
+
+                <div id="parcelMap" class="parcel-map"></div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- =====================================================
+         FOOTER
+         ===================================================== -->
+
+    <footer class="footer">
+
+        <div class="footer-inner">
+
+            <div>
+
+                <strong>
+                    LandCraft
+                </strong>
+
+                <span>
+                    Digital Land Verification Platform
+                </span>
+
+            </div>
+
+
+            <div>
+
+                <span>
+                    Recorded data shown here is reference data.
+                </span>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+         ===================================================== -->
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script src="parcel.js"></script>
+
+</body>
+
+</html>

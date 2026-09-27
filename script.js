@@ -510,6 +510,103 @@ function initializeLandCraft() {
 
     loadRecentActivity();
 
+    loadSurveyHistory();
+
+}
+
+/* =========================================================
+   SURVEY HISTORY
+   ========================================================= */
+
+function loadSurveyHistory() {
+
+    const historyContainer =
+        document.getElementById("surveyHistoryList");
+
+    if (!historyContainer) return;
+
+    const surveys =
+        JSON.parse(
+            localStorage.getItem("landcraftSurveys")
+        ) || [];
+
+    if (surveys.length === 0) {
+
+        historyContainer.innerHTML = `
+            <div class="survey-history-empty">
+                No surveys saved yet.
+            </div>
+        `;
+
+        return;
+    }
+
+    historyContainer.innerHTML = "";
+
+    // Show newest survey first
+    const reversedSurveys = [...surveys].reverse();
+
+    reversedSurveys.forEach(function (survey) {
+
+        const surveyDate =
+            new Date(survey.date);
+
+        const formattedDate =
+            surveyDate.toLocaleDateString(
+                "en-IN",
+                {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric"
+                }
+            );
+
+        const surveyCard =
+            document.createElement("div");
+
+        surveyCard.className =
+            "survey-history-card";
+
+        surveyCard.innerHTML = `
+            <div class="survey-history-main">
+
+                <div class="survey-history-id">
+                    ${survey.surveyId}
+                </div>
+
+                <div class="survey-history-info">
+                    <strong>
+                        ${survey.plotId || "Plot not selected"}
+                    </strong>
+
+                    <span>
+                        ${survey.surveyor || "Surveyor not specified"}
+                    </span>
+                </div>
+
+            </div>
+
+            <div class="survey-history-meta">
+
+                <span>
+                    ${formattedDate}
+                </span>
+
+                <span>
+                    ${survey.points.length} points
+                </span>
+
+                <span class="survey-status">
+                    ${survey.status}
+                </span>
+
+            </div>
+        `;
+
+        historyContainer.appendChild(
+            surveyCard
+        );
+    });
 }
 
 

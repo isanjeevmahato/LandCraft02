@@ -6,6 +6,13 @@ let gpsWatchId = null;
 let currentPosition = null;
 let surveyPoints = [];
 
+let surveyMap = null;
+let pointMarkers = [];
+let boundaryLine = null;
+let boundaryPolygon = null;
+
+let recordedBoundaryLayer = null;
+
 
 /* =========================================================
    MOBILE MENU
@@ -191,6 +198,234 @@ function updateGPSDisplay(position) {
     }
 }
 
+/* =========================================================
+   SURVEY MAP
+   ========================================================= */
+
+function initializeSurveyMap() {
+
+    const mapElement = document.getElementById("surveyMap");
+
+    if (!mapElement) return;
+
+    surveyMap = L.map("surveyMap").setView(
+        [23.7035, 86.1860],
+        17
+    );
+
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            maxZoom: 19,
+            attribution: "&copy; OpenStreetMap contributors"
+        }
+    ).addTo(surveyMap);
+}
+
+/* =========================================================
+   LOAD RECORDED BOUNDARY
+   ========================================================= */
+
+function loadRecordedBoundary(plotId) {
+
+    if (!surveyMap || !plotId) return;
+
+    fetch("data/plots.geojson")
+        .then(function (response) {
+
+            if (!response.ok) {
+                throw new Error("Unable to load plots.geojson");
+            }
+
+            return response.json();
+        })
+
+        .then(function (data) {
+
+            // Remove previous recorded boundary
+            if (recordedBoundaryLayer) {
+                surveyMap.removeLayer(
+                    recordedBoundaryLayer
+                );
+
+                recordedBoundaryLayer = null;
+            }
+
+
+            // Find selected plot
+            const selectedFeature =
+                data.features.find(function (feature) {
+
+                    return (
+                        feature.properties &&
+                        feature.properties.plotId === plotId
+                    );
+
+                });
+
+
+            if (!selectedFeature) {
+
+                console.warn(
+                    "Recorded boundary not found for:",
+                    plotId
+                );
+
+                return;
+            }
+
+
+            // Add selected recorded boundary
+            recordedBoundaryLayer =
+                L.geoJSON(
+                    selectedFeature,
+                    {
+                        style: {
+                            color: "#1d4ed8",
+                            weight: 3,
+                            fillColor: "#3b82f6",
+                            fillOpacity: 0.15
+                        }
+                    }
+                ).addTo(surveyMap);
+
+
+            // Zoom to recorded boundary
+            const bounds =
+                recordedBoundaryLayer.getBounds();
+
+            if (bounds.isValid()) {
+
+                surveyMap.fitBounds(
+                    bounds,
+                    {
+                        padding: [30, 30]
+                    }
+                );
+            }
+
+
+            console.log(
+                "Recorded Boundary Loaded:",
+                plotId
+            );
+        })
+
+        .catch(function (error) {
+
+            console.error(
+                "Recorded Boundary Error:",
+                error
+            );
+
+        });
+}
+
+/* =========================================================
+   UPDATE SURVEY BOUNDARY
+   ========================================================= */
+
+function updateSurveyMap() {
+
+    if (!surveyMap) return;
+
+    // Remove old markers
+    pointMarkers.forEach(function (marker) {
+        surveyMap.removeLayer(marker);
+    });
+
+    pointMarkers = [];
+
+    // Remove old line
+    if (boundaryLine) {
+        surveyMap.removeLayer(boundaryLine);
+        boundaryLine = null;
+    }
+
+    // Remove old polygon
+    if (boundaryPolygon) {
+        surveyMap.removeLayer(boundaryPolygon);
+        boundaryPolygon = null;
+    }
+
+    if (surveyPoints.length === 0) {
+        return;
+    }
+
+    const coordinates = [];
+
+    surveyPoints.forEach(function (point) {
+
+        const position = [
+            point.latitude,
+            point.longitude
+        ];
+
+        coordinates.push(position);
+
+        const marker = L.marker(position)
+            .addTo(surveyMap)
+            .bindTooltip(point.id, {
+                permanent: true,
+                direction: "top"
+            });
+
+        pointMarkers.push(marker);
+    });
+
+
+    // Connect points with a line
+    if (surveyPoints.length >= 2) {
+
+        boundaryLine = L.polyline(
+            coordinates,
+            {
+                color: "#0f7b5f",
+                weight: 3
+            }
+        ).addTo(surveyMap);
+    }
+
+
+    // Create closed boundary
+    if (surveyPoints.length >= 3) {
+
+        boundaryPolygon = L.polygon(
+            coordinates,
+            {
+                color: "#0f7b5f",
+                weight: 2,
+                fillColor: "#4d8b76",
+                fillOpacity: 0.25
+            }
+        ).addTo(surveyMap);
+    }
+
+
+    // Zoom map to collected points
+    const bounds = L.latLngBounds();
+
+    if (coordinates.length > 0) {
+        bounds.extend(coordinates);
+    }
+
+    if (recordedBoundaryLayer) {
+        bounds.extend(
+            recordedBoundaryLayer.getBounds()
+        );
+    }
+
+    if (bounds.isValid()) {
+
+        surveyMap.fitBounds(
+            bounds,
+            {
+                padding: [40, 40]
+            }
+        );
+    }
+}
+
 
 /* =========================================================
    SAVE POINT
@@ -223,6 +458,8 @@ function savePoint() {
     displayPoints();
 
     updatePointCount();
+
+    updateSurveyMap();
 
     console.log("Saved Point:", point);
 }
@@ -317,27 +554,78 @@ function createBoundary() {
 
     console.log("Creating Boundary...");
 
-    // Close the polygon by returning to P1
-    const boundaryPoints = [...surveyPoints, surveyPoints[0]];
+    // Close polygon: P1 → P2 → ... → P1
+    const boundaryPoints = [
+        ...surveyPoints,
+        surveyPoints[0]
+    ];
 
-    console.log("Boundary Points:", boundaryPoints);
+    // Calculate area in square meters
+    const areaM2 = calculatePolygonArea(boundaryPoints);
 
-    // Calculate approximate area
-    const area = calculatePolygonArea(boundaryPoints);
+    // Convert square meters to acres
+    const areaAcres = areaM2 / 4046.8564224;
 
+    // Draw boundary on Survey Map
+    drawBoundaryOnMap(surveyPoints);
+
+    // Update calculated area
+    const surveyArea =
+        document.getElementById("surveyArea");
+
+    const areaStatus =
+        document.getElementById("areaStatus");
+
+    if (surveyArea) {
+        surveyArea.textContent =
+            areaAcres.toFixed(4);
+    }
+
+    if (areaStatus) {
+        areaStatus.textContent =
+            "Boundary created successfully • " +
+            surveyPoints.length +
+            " points collected";
+    }
+
+    // Success message
     alert(
         "Boundary Created Successfully!\n\n" +
         "Points: " + surveyPoints.length + "\n" +
-        "Approx. Area: " + area.toFixed(2) + " m²"
+        "Area: " + areaAcres.toFixed(4) + " acres"
     );
 
-    console.log(
-        "Boundary Area:",
-        area.toFixed(2),
-        "m²"
-    );
+    console.log("Boundary Points:", boundaryPoints);
+    console.log("Area:", areaM2.toFixed(2), "m²");
+    console.log("Area:", areaAcres.toFixed(4), "acres");
 }
 
+
+/* =========================================================
+   DRAW BOUNDARY ON SURVEY MAP
+   ========================================================= */
+
+function drawBoundaryOnMap(points) {
+
+    if (!surveyMap) {
+        console.error("Survey map is not initialized.");
+        return;
+    }
+
+    if (points.length < 3) {
+        return;
+    }
+
+    // Use the Leaflet survey map
+    // instead of replacing its HTML.
+    updateSurveyMap();
+
+    console.log(
+        "Boundary drawn on Leaflet map with",
+        points.length,
+        "points."
+    );
+}
 
 /* =========================================================
    CALCULATE POLYGON AREA
@@ -401,6 +689,8 @@ function initializeFieldSurvey() {
 
     setupMobileMenu();
 
+    initializeSurveyMap();
+
     const startGpsButton =
         document.getElementById("startGpsBtn");
 
@@ -415,6 +705,24 @@ function initializeFieldSurvey() {
 
     const createBoundaryButton =
         document.getElementById("createBoundaryBtn");
+
+    const saveSurveyButton =
+        document.getElementById("saveSurveyBtn");
+
+    const surveyPlotSelect =
+        document.getElementById("surveyPlotId");
+
+    const urlParams =
+        new URLSearchParams(window.location.search);
+
+    const plotFromUrl =
+        urlParams.get("plot");
+
+    const surveyTypeSelect =
+        document.getElementById("surveyType");
+
+    const plotIdGroup =
+        document.getElementById("plotIdGroup");
 
 
     /* START GPS */
@@ -478,12 +786,186 @@ function initializeFieldSurvey() {
 
     }
 
+    /* SAVE SURVEY */
+
+    if (saveSurveyButton) {
+
+        saveSurveyButton.addEventListener(
+            "click",
+            saveSurvey
+        );
+
+    }
+
+    /* PLOT SELECTION */
+
+    if (surveyPlotSelect) {
+
+        surveyPlotSelect.addEventListener(
+            "change",
+            function () {
+
+                loadRecordedBoundary(
+                    this.value
+                );
+
+            }
+        );
+
+    }
+
+    if (plotFromUrl && surveyPlotSelect) {
+
+        surveyPlotSelect.value = plotFromUrl;
+
+        loadRecordedBoundary(plotFromUrl);
+
+    }
+
+    if (surveyTypeSelect) {
+
+        surveyTypeSelect.addEventListener(
+            "change",
+            function () {
+
+                if (this.value === "recorded") {
+
+                    // Show Plot ID
+                    if (plotIdGroup) {
+                        plotIdGroup.style.display = "block";
+                    }
+
+                }
+
+                else if (this.value === "new") {
+
+                    // Hide Plot ID
+                    if (plotIdGroup) {
+                        plotIdGroup.style.display = "none";
+                    }
+
+                    // Clear selected plot
+                    if (surveyPlotSelect) {
+                        surveyPlotSelect.value = "";
+                    }
+
+                    // Remove recorded boundary
+                    if (recordedBoundaryLayer) {
+
+                        surveyMap.removeLayer(
+                            recordedBoundaryLayer
+                        );
+
+                        recordedBoundaryLayer = null;
+                    }
+
+                }
+
+            }
+        );
+
+    }
+
 
     updatePointCount();
 
     updateGPSStatus(
         "error",
         "GPS Not Started"
+    );
+}
+
+/* =========================================================
+   SAVE SURVEY
+   ========================================================= */
+
+function saveSurvey() {
+
+    if (surveyPoints.length < 3) {
+        alert(
+            "At least 3 survey points are required before saving."
+        );
+        return;
+    }
+
+    const plotId =
+        document.getElementById("surveyPlotId")?.value || "";
+
+    const surveyorName =
+        document.getElementById("surveyorName")?.value.trim() || "";
+
+    const surveyAreaElement =
+        document.getElementById("surveyArea");
+
+    const surveyArea =
+        surveyAreaElement
+            ? surveyAreaElement.textContent
+            : "0.0000";
+
+
+    // Generate Survey ID
+    const existingSurveys =
+        JSON.parse(
+            localStorage.getItem("landcraftSurveys")
+        ) || [];
+
+    const surveyNumber =
+        existingSurveys.length + 1;
+
+    const surveyId =
+        "SUR-" +
+        String(surveyNumber).padStart(3, "0");
+
+
+    // Create survey object
+    const survey = {
+
+        surveyId: surveyId,
+
+        plotId: plotId,
+
+        surveyor: surveyorName,
+
+        date: new Date().toISOString(),
+
+        points: surveyPoints.map(function (point) {
+
+            return {
+                id: point.id,
+                latitude: point.latitude,
+                longitude: point.longitude,
+                accuracy: point.accuracy,
+                timestamp: point.timestamp
+            };
+
+        }),
+
+        areaAcres: surveyArea,
+
+        status: "Completed"
+    };
+
+
+    // Save survey
+    existingSurveys.push(survey);
+
+    localStorage.setItem(
+        "landcraftSurveys",
+        JSON.stringify(existingSurveys)
+    );
+
+
+    console.log(
+        "Survey Saved:",
+        survey
+    );
+
+
+    alert(
+        "Survey Saved Successfully!\n\n" +
+        "Survey ID: " + surveyId + "\n" +
+        "Plot: " + (plotId || "Not selected") + "\n" +
+        "Points: " + surveyPoints.length
     );
 }
 
